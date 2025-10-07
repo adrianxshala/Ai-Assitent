@@ -1,32 +1,82 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Send, Bot, User } from "lucide-react";
 
 export default function Home() {
   const [input, setInput] = useState("");
   const [response, setResponse] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+
+  // Load previous messages on component mount
+  useEffect(() => {
+    const loadMessages = async () => {
+      try {
+        const res = await fetch("/api/message", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setMessages(data.messages || []);
+        } else {
+          console.warn("Failed to load messages:", res.status);
+        }
+      } catch (error) {
+        console.error("Error loading messages:", error);
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    };
+
+    loadMessages();
+  }, []);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
 
     setIsTyping(true);
     try {
-      const res = await fetch("/api/chat", {
+      // First, store the message in the database
+      const messageRes = await fetch("/api/message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: input,
+        }),
+        credentials: "include",
+      });
+
+      if (!messageRes.ok) {
+        console.warn("Failed to save message to database:", messageRes.status);
+        // Continue with AI chat even if message saving fails
+      } else {
+        const messageData = await messageRes.json();
+        console.log("Message saved successfully:", messageData);
+        // Add the new message to local state
+        setMessages((prev) => [messageData.message, ...prev]);
+      }
+
+      // Then get AI response
+      const chatRes = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: input }),
       });
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
+      if (!chatRes.ok) {
+        throw new Error(`HTTP error! status: ${chatRes.status}`);
       }
 
-      const data = await res.json();
-      if (data.error) {
-        setResponse(`Error: ${data.error}`);
+      const chatData = await chatRes.json();
+      if (chatData.error) {
+        setResponse(`Error: ${chatData.error}`);
       } else {
-        setResponse(data.reply);
+        setResponse(chatData.reply);
       }
     } catch (error) {
       console.error("Error:", error);
@@ -104,7 +154,6 @@ export default function Home() {
           <h1 className="text-7xl font-black bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent mb-4 drop-shadow-2xl tracking-tight">
             Adrian's AI Assistant
           </h1>
-          
         </div>
 
         {/* Chat Container */}
@@ -125,6 +174,39 @@ export default function Home() {
             <div className="relative min-h-[500px] max-h-[600px] overflow-y-auto p-8 space-y-6">
               {/* Holographic overlay */}
               <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 via-transparent to-cyan-500/5 pointer-events-none"></div>
+
+              {/* Message History */}
+              {messages.length > 0 && (
+                <div className="space-y-4 mb-6">
+                  <div className="text-center">
+                    <p className="text-emerald-400/60 text-sm font-mono tracking-wider">
+                      [MESSAGE_HISTORY] • {messages.length} STORED_MESSAGES
+                    </p>
+                  </div>
+                  {messages.slice(0, 5).map((msg, index) => (
+                    <div
+                      key={msg.id || index}
+                      className="flex justify-end items-start gap-4"
+                    >
+                      <div className="relative max-w-[60%]">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-gray-600 to-gray-500 rounded-2xl blur-sm opacity-20"></div>
+                        <div className="relative bg-gradient-to-r from-gray-800/30 to-gray-700/30 backdrop-blur-xl rounded-2xl rounded-tr-sm p-4 border border-gray-500/20 shadow-xl">
+                          <div className="absolute inset-0 bg-gradient-to-r from-gray-500/5 to-gray-400/5 rounded-2xl"></div>
+                          <p className="relative text-gray-300 text-sm leading-relaxed font-mono tracking-wide">
+                            {msg.content}
+                          </p>
+                          <p className="relative text-gray-500 text-xs mt-2 font-mono">
+                            {new Date(msg.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-gray-600 to-gray-500 flex items-center justify-center relative shadow-xl">
+                        <User className="relative w-4 h-4 text-gray-300" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               {response && (
                 <>
                   {/* User Message */}
@@ -167,7 +249,7 @@ export default function Home() {
                 </>
               )}
 
-              {!response && (
+              {!response && !isLoadingMessages && (
                 <div className="flex items-center justify-center h-[500px] text-center">
                   <div className="relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-blue-500/20 blur-2xl"></div>
@@ -189,6 +271,46 @@ export default function Home() {
                         </p>
                         <p className="text-emerald-400/50 text-sm font-mono tracking-[0.2em]">
                           AWAITING QUANTUM INPUT SIGNAL...
+                        </p>
+                        <div className="flex justify-center gap-2 mt-4">
+                          <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                          <div
+                            className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"
+                            style={{ animationDelay: "0.3s" }}
+                          ></div>
+                          <div
+                            className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
+                            style={{ animationDelay: "0.6s" }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isLoadingMessages && (
+                <div className="flex items-center justify-center h-[500px] text-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-blue-500/20 blur-2xl"></div>
+                    <div className="relative">
+                      <div className="relative mb-8">
+                        <div className="absolute inset-0 bg-emerald-500 blur-xl opacity-40 animate-pulse"></div>
+                        <Bot
+                          className="relative w-24 h-24 text-emerald-400/60 mx-auto drop-shadow-2xl"
+                          strokeWidth={1}
+                        />
+                        <div
+                          className="absolute -inset-4 border border-emerald-500/20 rounded-full animate-spin"
+                          style={{ animationDuration: "3s" }}
+                        ></div>
+                      </div>
+                      <div className="space-y-3">
+                        <p className="text-emerald-300/70 text-xl font-mono tracking-wider">
+                          [LOADING_MESSAGE_HISTORY]
+                        </p>
+                        <p className="text-emerald-400/50 text-sm font-mono tracking-[0.2em]">
+                          ACCESSING_DATABASE_RECORDS...
                         </p>
                         <div className="flex justify-center gap-2 mt-4">
                           <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
