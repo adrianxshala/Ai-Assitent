@@ -4,11 +4,6 @@ const nextConfig: NextConfig = {
   // Enable static exports for Vercel deployment
   output: "standalone",
 
-  // Optimize for production
-  experimental: {
-    optimizeCss: true,
-  },
-
   // Environment variables validation
   env: {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
