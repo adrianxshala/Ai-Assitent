@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Send, Bot, User } from "lucide-react";
 
 export default function Home() {
@@ -8,6 +8,81 @@ export default function Home() {
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Matrix code rain animation
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Set canvas size
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+
+    // Matrix characters
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()_+-=[]{}|;:,.<>?";
+    const charArray = chars.split("");
+
+    const fontSize = 14;
+    const columns = Math.floor(canvas.width / fontSize);
+    const drops: number[] = [];
+
+    // Initialize drops
+    for (let i = 0; i < columns; i++) {
+      drops[i] = Math.random() * canvas.height;
+    }
+
+    const draw = () => {
+      // Black background with slight transparency for trail effect
+      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#00FF41";
+      ctx.font = `${fontSize}px monospace`;
+
+      for (let i = 0; i < drops.length; i++) {
+        const char = charArray[Math.floor(Math.random() * charArray.length)];
+        const x = i * fontSize;
+        const y = drops[i];
+
+        // Bright head of the stream
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillText(char, x, y);
+
+        // Green trail
+        ctx.fillStyle = "#00FF41";
+        ctx.fillText(char, x, y - fontSize);
+        ctx.fillText(char, x, y - fontSize * 2);
+
+        // Darker trail
+        ctx.fillStyle = "#003B00";
+        ctx.fillText(char, x, y - fontSize * 3);
+        ctx.fillText(char, x, y - fontSize * 4);
+
+        // Reset drop to top randomly
+        if (y > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+
+        drops[i] += fontSize;
+      }
+    };
+
+    const interval = setInterval(draw, 50);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("resize", resizeCanvas);
+    };
+  }, []);
 
   // Load previous messages on component mount
   useEffect(() => {
@@ -53,11 +128,9 @@ export default function Home() {
 
       if (!messageRes.ok) {
         console.warn("Failed to save message to database:", messageRes.status);
-        // Continue with AI chat even if message saving fails
       } else {
         const messageData = await messageRes.json();
         console.log("Message saved successfully:", messageData);
-        // Add the new message to local state
         setMessages((prev) => [messageData.message, ...prev]);
       }
 
@@ -97,342 +170,366 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen bg-black overflow-hidden">
-      {/* Dark futuristic background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-black"></div>
+      {/* Matrix code rain canvas */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 z-0"
+        style={{ background: "#000000" }}
+      />
 
-      {/* Animated circuit pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#00ff88_1px,transparent_1px),linear-gradient(to_bottom,#00ff88_1px,transparent_1px)] bg-[size:32px_32px] opacity-10 animate-pulse"></div>
-
-      {/* Matrix-style rain effect */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(0,255,136,0.1)_50%,transparent_100%)] animate-pulse"></div>
-
-      {/* Glowing energy orbs */}
-      <div className="absolute top-10 left-10 w-96 h-96 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
-      <div
-        className="absolute bottom-10 right-10 w-80 h-80 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full filter blur-3xl opacity-25 animate-pulse"
-        style={{ animationDelay: "1s" }}
-      ></div>
-      <div
-        className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full filter blur-3xl opacity-20 animate-pulse"
-        style={{ animationDelay: "2s" }}
-      ></div>
-
-      {/* Scanning lines */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-500/5 to-transparent h-1 animate-pulse"></div>
-      <div
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/5 to-transparent w-1 animate-pulse"
-        style={{ animationDelay: "0.5s" }}
-      ></div>
-
-      <main className="relative flex flex-col items-center justify-center min-h-screen p-8">
-        {/* Header */}
-        <div className="mb-12 text-center">
-          <div className="flex items-center justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-emerald-500 blur-2xl opacity-60 animate-pulse"></div>
-              <div
-                className="absolute inset-0 bg-cyan-500 blur-xl opacity-40 animate-pulse"
-                style={{ animationDelay: "0.5s" }}
-              ></div>
-              <Bot
-                className="relative w-20 h-20 text-emerald-400 drop-shadow-2xl"
-                strokeWidth={1.5}
-              />
-              <div
-                className="absolute -inset-4 border border-emerald-500/30 rounded-full animate-spin"
-                style={{ animationDuration: "8s" }}
-              ></div>
-              <div
-                className="absolute -inset-2 border border-cyan-500/20 rounded-full animate-spin"
-                style={{
-                  animationDuration: "12s",
-                  animationDirection: "reverse",
-                }}
-              ></div>
-            </div>
-          </div>
-          <h1 className="text-7xl font-black bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent mb-4 drop-shadow-2xl tracking-tight">
-            Adrian's AI Assistant
-          </h1>
+      {/* 3D Depth Layers */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8">
+        {/* Layer 1: Distant holographic grid */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/5 to-transparent"></div>
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `
+              linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px)
+            `,
+              backgroundSize: "50px 50px",
+            }}
+          ></div>
         </div>
 
-        {/* Chat Container */}
-        <div className="relative w-full max-w-4xl">
-          {/* Outer glow effect */}
-          <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500 rounded-3xl blur-lg opacity-30 animate-pulse"></div>
+        {/* Layer 2: Main 3D interface */}
+        <div
+          className="relative w-full max-w-xs sm:max-w-sm md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto"
+          style={{ perspective: "1000px" }}
+        >
+          {/* 3D Robot Avatar */}
           <div
-            className="absolute -inset-2 bg-gradient-to-r from-purple-600 via-pink-600 to-red-500 rounded-3xl blur-xl opacity-20 animate-pulse"
-            style={{ animationDelay: "1s" }}
-          ></div>
+            className="text-center mb-6 sm:mb-8 md:mb-10 lg:mb-12"
+            style={{ transformStyle: "preserve-3d" }}
+          >
+            <div className="relative inline-block group">
+              {/* 3D Robot Head */}
+              <div
+                className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 mx-auto mb-4 sm:mb-6 transition-transform duration-300 group-hover:scale-110"
+                style={{
+                  transform: "rotateX(15deg) rotateY(0deg)",
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                {/* Wireframe cube */}
+                <div
+                  className="absolute inset-0 border-2 border-green-400 opacity-60"
+                  style={{
+                    transform: "rotateX(45deg) rotateY(45deg)",
+                    boxShadow: "0 0 20px #00FF41, inset 0 0 20px #00FF41",
+                  }}
+                ></div>
 
-          {/* Main container */}
-          <div className="relative backdrop-blur-2xl bg-black/40 rounded-3xl border border-emerald-500/30 shadow-2xl overflow-hidden">
-            {/* Animated border */}
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-blue-500/20 rounded-3xl animate-pulse"></div>
-            <div className="absolute inset-[1px] bg-black/60 rounded-3xl"></div>
-            {/* Messages Display */}
-            <div className="relative min-h-[500px] max-h-[600px] overflow-y-auto p-8 space-y-6">
-              {/* Holographic overlay */}
-              <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 via-transparent to-cyan-500/5 pointer-events-none"></div>
+                {/* Robot face */}
+                <div className="absolute inset-2 sm:inset-3 md:inset-4 flex items-center justify-center">
+                  <Bot
+                    className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-16 lg:h-16 text-green-400"
+                    style={{
+                      filter: "drop-shadow(0 0 10px #00FF41)",
+                      textShadow: "0 0 20px #00FF41",
+                    }}
+                  />
+                </div>
 
+                {/* Glowing eyes */}
+                <div
+                  className="absolute top-4 left-4 sm:top-6 sm:left-6 md:top-8 md:left-8 w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 bg-green-400 rounded-full animate-pulse"
+                  style={{
+                    boxShadow: "0 0 15px #00FF41",
+                  }}
+                ></div>
+                <div
+                  className="absolute top-4 right-4 sm:top-6 sm:right-6 md:top-8 md:right-8 w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 bg-green-400 rounded-full animate-pulse"
+                  style={{
+                    boxShadow: "0 0 15px #00FF41",
+                    animationDelay: "0.5s",
+                  }}
+                ></div>
+
+                {/* Energy field */}
+                <div
+                  className="absolute -inset-4 sm:-inset-6 md:-inset-8 border border-green-400/30 rounded-full animate-spin"
+                  style={{
+                    animationDuration: "8s",
+                    boxShadow: "0 0 30px #00FF41",
+                  }}
+                ></div>
+                <div
+                  className="absolute -inset-6 sm:-inset-8 md:-inset-12 border border-cyan-400/20 rounded-full animate-spin"
+                  style={{
+                    animationDuration: "12s",
+                    animationDirection: "reverse",
+                    boxShadow: "0 0 40px #00FFFF",
+                  }}
+                ></div>
+              </div>
+
+              {/* 3D Title */}
+              <h1
+                className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-green-400 mb-2 sm:mb-3 md:mb-4 transition-transform duration-300 group-hover:translateZ(20px)"
+                style={{
+                  textShadow: "0 0 20px #00FF41, 0 0 40px #00FF41",
+                  fontFamily: "monospace",
+                  transform: "translateZ(0px)",
+                }}
+              >
+                ADRIAN ASSISTANT AI
+              </h1>
+              <p
+                className="text-sm sm:text-base md:text-lg lg:text-xl text-cyan-400 font-mono"
+                style={{
+                  textShadow: "0 0 10px #00FFFF",
+                  transform: "translateZ(10px)",
+                }}
+              >
+                [SYSTEM_ONLINE] • [NEURAL_NET_ACTIVE]
+              </p>
+            </div>
+          </div>
+
+          {/* 3D Chat Container */}
+          <div
+            className="relative bg-black/80 backdrop-blur-sm border border-green-400/50 rounded-2xl shadow-2xl transition-transform duration-300 hover:translateZ(20px)"
+            style={{
+              transform: "translateZ(0px)",
+              boxShadow:
+                "0 0 50px rgba(0, 255, 65, 0.3), inset 0 0 50px rgba(0, 255, 65, 0.1)",
+            }}
+          >
+            {/* Holographic border effect */}
+            <div
+              className="absolute inset-0 rounded-2xl"
+              style={{
+                background:
+                  "linear-gradient(45deg, transparent, rgba(0, 255, 65, 0.1), transparent)",
+                animation: "hologram 3s linear infinite",
+              }}
+            ></div>
+
+            {/* Messages Area */}
+            <div className="h-48 sm:h-64 md:h-80 lg:h-96 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 relative z-10">
               {/* Message History */}
               {messages.length > 0 && (
-                <div className="space-y-4 mb-6">
-                  <div className="text-center">
-                    <p className="text-emerald-400/60 text-sm font-mono tracking-wider">
-                      [MESSAGE_HISTORY] • {messages.length} STORED_MESSAGES
-                    </p>
-                  </div>
-                  {messages.slice(0, 5).map((msg, index) => (
-                    <div
-                      key={msg.id || index}
-                      className="flex justify-end items-start gap-4"
-                    >
-                      <div className="relative max-w-[60%]">
-                        <div className="absolute -inset-1 bg-gradient-to-r from-gray-600 to-gray-500 rounded-2xl blur-sm opacity-20"></div>
-                        <div className="relative bg-gradient-to-r from-gray-800/30 to-gray-700/30 backdrop-blur-xl rounded-2xl rounded-tr-sm p-4 border border-gray-500/20 shadow-xl">
-                          <div className="absolute inset-0 bg-gradient-to-r from-gray-500/5 to-gray-400/5 rounded-2xl"></div>
-                          <p className="relative text-gray-300 text-sm leading-relaxed font-mono tracking-wide">
-                            {msg.content}
-                          </p>
-                          <p className="relative text-gray-500 text-xs mt-2 font-mono">
-                            {new Date(msg.created_at).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-gray-600 to-gray-500 flex items-center justify-center relative shadow-xl">
-                        <User className="relative w-4 h-4 text-gray-300" />
+                <div className="space-y-3 mb-4">
+                  {messages.slice(0, 3).map((msg, index) => (
+                    <div key={msg.id || index} className="flex justify-end">
+                      <div
+                        className="bg-green-900/30 text-green-400 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg max-w-[80%] sm:max-w-xs border border-green-400/30 transition-transform duration-300 hover:translateZ(10px)"
+                        style={{
+                          textShadow: "0 0 10px #00FF41",
+                          boxShadow: "0 0 20px rgba(0, 255, 65, 0.3)",
+                        }}
+                      >
+                        <p className="text-xs sm:text-sm font-mono">
+                          {msg.content}
+                        </p>
+                        <p className="text-xs text-green-300 mt-1 font-mono">
+                          {new Date(msg.created_at).toLocaleString()}
+                        </p>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
+
+              {/* Current Conversation */}
               {response && (
                 <>
                   {/* User Message */}
-                  <div className="flex justify-end items-start gap-4 animate-in slide-in-from-right duration-500">
-                    <div className="relative max-w-[75%]">
-                      <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-2xl blur-sm opacity-30"></div>
-                      <div className="relative bg-gradient-to-r from-emerald-900/40 to-cyan-900/40 backdrop-blur-xl rounded-2xl rounded-tr-sm p-5 border border-emerald-500/40 shadow-2xl">
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 rounded-2xl"></div>
-                        <p className="relative text-emerald-100 text-sm leading-relaxed font-mono tracking-wide">
-                          {input}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center relative shadow-2xl">
-                      <div className="absolute inset-0 bg-emerald-400 rounded-full blur-lg opacity-60 animate-pulse"></div>
-                      <User className="relative w-5 h-5 text-black font-bold" />
+                  <div className="flex justify-end mb-2 sm:mb-3">
+                    <div
+                      className="bg-green-900/30 text-green-400 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg max-w-[80%] sm:max-w-xs border border-green-400/30 transition-transform duration-300 hover:translateZ(10px)"
+                      style={{
+                        textShadow: "0 0 10px #00FF41",
+                        boxShadow: "0 0 20px rgba(0, 255, 65, 0.3)",
+                      }}
+                    >
+                      <p className="text-xs sm:text-sm font-mono">{input}</p>
                     </div>
                   </div>
 
                   {/* AI Response */}
-                  <div className="flex justify-start items-start gap-4 animate-in slide-in-from-left duration-500">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center relative shadow-2xl">
-                      <div className="absolute inset-0 bg-purple-400 rounded-full blur-lg opacity-60 animate-pulse"></div>
-                      <div
-                        className="absolute -inset-2 border border-purple-500/30 rounded-full animate-spin"
-                        style={{ animationDuration: "3s" }}
-                      ></div>
-                      <Bot className="relative w-5 h-5 text-white" />
-                    </div>
-                    <div className="relative max-w-[75%]">
-                      <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur-sm opacity-30"></div>
-                      <div className="relative bg-gradient-to-r from-purple-900/40 to-pink-900/40 backdrop-blur-xl rounded-2xl rounded-tl-sm p-5 border border-purple-500/40 shadow-2xl">
-                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-2xl"></div>
-                        <p className="relative text-purple-100 text-sm leading-relaxed font-mono tracking-wide">
-                          {response}
-                        </p>
-                      </div>
+                  <div className="flex justify-start mb-2 sm:mb-3">
+                    <div
+                      className="bg-black/50 text-cyan-400 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg max-w-[80%] sm:max-w-xs border border-cyan-400/30 transition-transform duration-300 hover:translateZ(10px)"
+                      style={{
+                        textShadow: "0 0 10px #00FFFF",
+                        boxShadow: "0 0 20px rgba(0, 255, 255, 0.3)",
+                      }}
+                    >
+                      <p className="text-xs sm:text-sm font-mono">{response}</p>
                     </div>
                   </div>
                 </>
               )}
 
-              {!response && !isLoadingMessages && (
-                <div className="flex items-center justify-center h-[500px] text-center">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-blue-500/20 blur-2xl"></div>
-                    <div className="relative">
-                      <div className="relative mb-8">
-                        <div className="absolute inset-0 bg-emerald-500 blur-xl opacity-40 animate-pulse"></div>
-                        <Bot
-                          className="relative w-24 h-24 text-emerald-400/60 mx-auto drop-shadow-2xl"
-                          strokeWidth={1}
-                        />
-                        <div
-                          className="absolute -inset-4 border border-emerald-500/20 rounded-full animate-spin"
-                          style={{ animationDuration: "6s" }}
-                        ></div>
-                      </div>
-                      <div className="space-y-3">
-                        <p className="text-emerald-300/70 text-xl font-mono tracking-wider">
-                          [INITIALIZING_NEURAL_PROTOCOL]
-                        </p>
-                        <p className="text-emerald-400/50 text-sm font-mono tracking-[0.2em]">
-                          AWAITING QUANTUM INPUT SIGNAL...
-                        </p>
-                        <div className="flex justify-center gap-2 mt-4">
-                          <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                          <div
-                            className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"
-                            style={{ animationDelay: "0.3s" }}
-                          ></div>
-                          <div
-                            className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
-                            style={{ animationDelay: "0.6s" }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
+              {/* Loading State */}
               {isLoadingMessages && (
-                <div className="flex items-center justify-center h-[500px] text-center">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-cyan-500/20 to-blue-500/20 blur-2xl"></div>
-                    <div className="relative">
-                      <div className="relative mb-8">
-                        <div className="absolute inset-0 bg-emerald-500 blur-xl opacity-40 animate-pulse"></div>
-                        <Bot
-                          className="relative w-24 h-24 text-emerald-400/60 mx-auto drop-shadow-2xl"
-                          strokeWidth={1}
-                        />
-                        <div
-                          className="absolute -inset-4 border border-emerald-500/20 rounded-full animate-spin"
-                          style={{ animationDuration: "3s" }}
-                        ></div>
-                      </div>
-                      <div className="space-y-3">
-                        <p className="text-emerald-300/70 text-xl font-mono tracking-wider">
-                          [LOADING_MESSAGE_HISTORY]
-                        </p>
-                        <p className="text-emerald-400/50 text-sm font-mono tracking-[0.2em]">
-                          ACCESSING_DATABASE_RECORDS...
-                        </p>
-                        <div className="flex justify-center gap-2 mt-4">
-                          <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                          <div
-                            className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"
-                            style={{ animationDelay: "0.3s" }}
-                          ></div>
-                          <div
-                            className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
-                            style={{ animationDelay: "0.6s" }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
+                <div className="flex items-center justify-center h-24 sm:h-32">
+                  <div
+                    className="text-green-400 font-mono text-sm sm:text-base"
+                    style={{ textShadow: "0 0 10px #00FF41" }}
+                  >
+                    [LOADING_MATRIX_DATA]...
                   </div>
                 </div>
               )}
 
-              {isTyping && (
-                <div className="flex justify-start items-start gap-4 animate-in slide-in-from-left duration-500">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center relative shadow-2xl">
-                    <div className="absolute inset-0 bg-purple-400 rounded-full blur-lg opacity-60 animate-pulse"></div>
+              {/* Empty State */}
+              {!response && !isLoadingMessages && (
+                <div className="flex items-center justify-center h-24 sm:h-32">
+                  <div className="text-center text-green-400 font-mono">
                     <div
-                      className="absolute -inset-2 border border-purple-500/30 rounded-full animate-spin"
-                      style={{ animationDuration: "2s" }}
-                    ></div>
-                    <Bot className="relative w-5 h-5 text-white" />
+                      className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 mx-auto mb-2 text-green-400"
+                      style={{ textShadow: "0 0 10px #00FF41" }}
+                    >
+                      <Bot />
+                    </div>
+                    <p
+                      className="text-sm sm:text-base"
+                      style={{ textShadow: "0 0 10px #00FF41" }}
+                    >
+                      [AWAITING_INPUT]
+                    </p>
                   </div>
-                  <div className="relative">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur-sm opacity-30"></div>
-                    <div className="relative bg-gradient-to-r from-purple-900/40 to-pink-900/40 backdrop-blur-xl rounded-2xl rounded-tl-sm p-5 border border-purple-500/40 shadow-2xl">
-                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-2xl"></div>
-                      <div className="relative flex gap-2">
-                        <div className="w-3 h-3 bg-purple-400 rounded-full animate-bounce"></div>
-                        <div
-                          className="w-3 h-3 bg-pink-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.2s" }}
-                        ></div>
-                        <div
-                          className="w-3 h-3 bg-purple-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.4s" }}
-                        ></div>
-                      </div>
+                </div>
+              )}
+
+              {/* Typing Indicator */}
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div
+                    className="bg-black/50 text-cyan-400 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg border border-cyan-400/30"
+                    style={{
+                      textShadow: "0 0 10px #00FFFF",
+                      boxShadow: "0 0 20px rgba(0, 255, 255, 0.3)",
+                    }}
+                  >
+                    <div className="flex space-x-1">
+                      <div
+                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-cyan-400 rounded-full animate-bounce"
+                        style={{ boxShadow: "0 0 5px #00FFFF" }}
+                      ></div>
+                      <div
+                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-cyan-400 rounded-full animate-bounce"
+                        style={{
+                          animationDelay: "0.1s",
+                          boxShadow: "0 0 5px #00FFFF",
+                        }}
+                      ></div>
+                      <div
+                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-cyan-400 rounded-full animate-bounce"
+                        style={{
+                          animationDelay: "0.2s",
+                          boxShadow: "0 0 5px #00FFFF",
+                        }}
+                      ></div>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Input Area */}
-            <div className="relative p-8 bg-gradient-to-r from-black/60 via-gray-900/40 to-black/60 backdrop-blur-xl border-t border-emerald-500/30">
-              {/* Animated border */}
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-blue-500/10"></div>
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500 to-transparent animate-pulse"></div>
-
-              <div className="relative flex gap-4">
-                <div className="flex-1 relative">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-2xl blur-sm opacity-30"></div>
+            {/* 3D Input Area */}
+            <div
+              className="p-3 sm:p-4 md:p-6 border-t border-green-400/30 relative z-10"
+              style={{
+                background:
+                  "linear-gradient(180deg, transparent, rgba(0, 255, 65, 0.05))",
+              }}
+            >
+              <div className="flex gap-2 sm:gap-3">
+                <div className="flex-1">
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className="relative w-full bg-black/60 text-emerald-100 placeholder-emerald-400/50 border border-emerald-500/40 rounded-2xl px-6 py-5 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/70 resize-none transition-all duration-500 font-mono tracking-wide shadow-2xl backdrop-blur-xl"
-                    placeholder="[ENTER_QUANTUM_COMMAND]..."
-                    rows={3}
+                    className="w-full bg-black/50 text-green-400 placeholder-green-400/50 border border-green-400/50 rounded-lg px-2 sm:px-3 md:px-4 py-2 sm:py-3 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent resize-none font-mono transition-all duration-300 text-sm sm:text-base"
+                    style={{
+                      textShadow: "0 0 5px #00FF41",
+                      boxShadow: "0 0 20px rgba(0, 255, 65, 0.2)",
+                    }}
+                    placeholder="[ENTER_MATRIX_COMMAND]..."
+                    rows={2}
                   />
                 </div>
-                <div className="relative">
-                  <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500 rounded-3xl blur-lg opacity-40 animate-pulse"></div>
-                  <button
-                    onClick={sendMessage}
-                    disabled={!input.trim() || isTyping}
-                    className="relative flex-shrink-0 w-16 h-16 bg-gradient-to-br from-emerald-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 disabled:from-gray-700 disabled:to-gray-800 disabled:cursor-not-allowed rounded-3xl flex items-center justify-center transition-all duration-500 hover:scale-110 active:scale-95 shadow-2xl hover:shadow-emerald-500/50 group"
-                  >
-                    <div className="absolute inset-0 bg-emerald-400 rounded-3xl blur-lg opacity-0 group-hover:opacity-60 transition-opacity duration-500"></div>
-                    <Send className="relative w-6 h-6 text-black font-bold drop-shadow-lg" />
-                  </button>
-                </div>
+                <button
+                  onClick={sendMessage}
+                  disabled={!input.trim() || isTyping}
+                  className="bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-black px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg transition-all duration-300 flex items-center justify-center font-bold hover:scale-105"
+                  style={{
+                    boxShadow: "0 0 20px rgba(0, 255, 65, 0.5)",
+                    textShadow: "0 0 5px #000000",
+                  }}
+                >
+                  <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
               </div>
-              <div className="relative mt-4 text-center text-emerald-400/60 text-xs font-mono tracking-[0.2em]">
+              <p
+                className="text-xs text-green-400/70 mt-2 font-mono"
+                style={{ textShadow: "0 0 5px #00FF41" }}
+              >
                 [ENTER] TO TRANSMIT • [SHIFT+ENTER] FOR MULTILINE •
-                [QUANTUM_SYNC_ACTIVE]
-              </div>
+                [MATRIX_SYNC_ACTIVE]
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Status Bar */}
-        <div className="relative mt-8 flex items-center justify-center gap-4 text-emerald-400/70 text-sm font-mono">
-          <div className="relative flex items-center gap-2">
-            <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse shadow-lg shadow-emerald-400/50"></div>
-            <div
-              className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"
-              style={{ animationDelay: "0.5s" }}
-            ></div>
-            <div
-              className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
-              style={{ animationDelay: "1s" }}
-            ></div>
-          </div>
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 blur-sm"></div>
-            <span className="relative tracking-[0.3em] font-bold">
-              [QUANTUM_NETWORK_ONLINE]
-            </span>
-          </div>
-          <div className="relative flex items-center gap-2">
-            <div
-              className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
-              style={{ animationDelay: "1.5s" }}
-            ></div>
-            <div
-              className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"
-              style={{ animationDelay: "2s" }}
-            ></div>
-            <div
-              className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse shadow-lg shadow-emerald-400/50"
-              style={{ animationDelay: "2.5s" }}
-            ></div>
+        {/* Layer 3: Floating UI panels */}
+        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20">
+          <div
+            className="bg-black/50 border border-green-400/30 rounded-lg p-2 sm:p-3 font-mono text-green-400 text-xs transition-transform duration-300 hover:translateZ(10px)"
+            style={{
+              textShadow: "0 0 10px #00FF41",
+              boxShadow: "0 0 20px rgba(0, 255, 65, 0.3)",
+            }}
+          >
+            <div className="animate-pulse">[SYSTEM_STATUS: ONLINE]</div>
+            <div className="animate-pulse" style={{ animationDelay: "0.5s" }}>
+              [NEURAL_NET: ACTIVE]
+            </div>
+            <div className="animate-pulse" style={{ animationDelay: "1s" }}>
+              [MATRIX_CONNECTION: STABLE]
+            </div>
           </div>
         </div>
-      </main>
+
+        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-20">
+          <div
+            className="bg-black/50 border border-cyan-400/30 rounded-lg p-2 sm:p-3 font-mono text-cyan-400 text-xs transition-transform duration-300 hover:translateZ(10px)"
+            style={{
+              textShadow: "0 0 10px #00FFFF",
+              boxShadow: "0 0 20px rgba(0, 255, 255, 0.3)",
+            }}
+          >
+            <div className="animate-pulse">[AI_CORE: OPERATIONAL]</div>
+            <div className="animate-pulse" style={{ animationDelay: "0.7s" }}>
+              [THREAT_LEVEL: MINIMAL]
+            </div>
+            <div className="animate-pulse" style={{ animationDelay: "1.2s" }}>
+              [MODE: INTERACTIVE]
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes hologram {
+          0% {
+            opacity: 0.1;
+          }
+          50% {
+            opacity: 0.3;
+          }
+          100% {
+            opacity: 0.1;
+          }
+        }
+      `}</style>
     </div>
   );
 }

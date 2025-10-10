@@ -1,6 +1,9 @@
-// src/app/api/messages/route.ts
+// src/app/api/message/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+
+// Simple in-memory storage for demo purposes
+// In production, you'd want to use a proper database
+let messages: any[] = [];
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,43 +16,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    // Create a simple message object
+    const newMessage = {
+      id: Date.now().toString(),
+      content: message,
+      created_at: new Date().toISOString(),
+      role: "user",
+    };
 
-    // Verifiko nëse përdoruesi është i autentifikuar
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    // Add to in-memory storage
+    messages.unshift(newMessage);
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    // Keep only last 50 messages to prevent memory issues
+    if (messages.length > 50) {
+      messages = messages.slice(0, 50);
     }
 
-    // Ruaj mesazhin në databazë
-    const { data, error } = await supabase
-      .from("messages")
-      .insert({
-        user_id: user.id,
-        content: message,
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Database error:", error);
-      return NextResponse.json(
-        { error: "Failed to save message" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      message: data 
+    return NextResponse.json({
+      success: true,
+      message: newMessage,
     });
   } catch (error) {
     console.error("Message API error:", error);
@@ -62,35 +47,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    const { data, error } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Database error:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch messages" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ messages: data });
+    // Return messages from in-memory storage
+    return NextResponse.json({ messages: messages });
   } catch (error) {
     console.error("Messages GET error:", error);
     return NextResponse.json(
