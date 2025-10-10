@@ -1,9 +1,10 @@
 // src/app/api/message/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { Message } from "@/types/message";
 
 // Simple in-memory storage for demo purposes
 // In production, you'd want to use a proper database
-let messages: any[] = [];
+let messages: Message[] = [];
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create a simple message object
-    const newMessage = {
+    const newMessage: Message = {
       id: Date.now().toString(),
       content: message,
       created_at: new Date().toISOString(),
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Return messages from in-memory storage
     return NextResponse.json({ messages: messages });

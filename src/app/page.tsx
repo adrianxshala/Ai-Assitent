@@ -1,12 +1,13 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Send, Bot, User } from "lucide-react";
+import { Send, Bot } from "lucide-react";
+import { Message } from "@/types/message";
 
 export default function Home() {
   const [input, setInput] = useState("");
   const [response, setResponse] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
