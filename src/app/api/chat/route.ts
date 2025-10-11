@@ -5,7 +5,6 @@ export async function POST(req: Request) {
   try {
     const { message } = await req.json();
 
-    // Validate input
     if (
       !message ||
       typeof message !== "string" ||
@@ -17,7 +16,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check for OpenAI API key
     if (!process.env.OPENAI_API_KEY) {
       console.error("OpenAI API key is not configured");
       return NextResponse.json(
@@ -29,12 +27,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Initialize OpenAI client
     const client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    // Create chat completion
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -64,8 +60,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ reply });
   } catch (error) {
     console.error("Chat API Error:", error);
-
-    // Handle specific OpenAI errors
     if (error instanceof Error) {
       if (error.message.includes("API key")) {
         return NextResponse.json(
@@ -80,7 +74,6 @@ export async function POST(req: Request) {
         );
       }
     }
-
     return NextResponse.json(
       {
         error:
