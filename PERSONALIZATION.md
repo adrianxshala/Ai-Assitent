@@ -10,63 +10,32 @@ Open `src/config/personal-info.ts` and update the following fields:
 
 ```typescript
 export const personalInfo = {
-  name: "Your Name", // Your name
-  title: "Your Title", // e.g., "Full Stack Developer", "Software Engineer"
-  bio: "Your bio...", // Short description about yourself
+  name: "AdrianXShala", // Your name
+  title: "Ai Enhaced Full Stack Developer", // e.g., "Full Stack Developer", "Software Engineer"
+  bio: "Jam një Full Stack Developer me fokus në Next.js, MERN Stack dhe integrimin e AI. Eksploroj teknologjitë moderne për të ndërtuar aplikacione inteligente dhe projekte që përdorin LLM, LangChain dhe Supabase.", // Short description about yourself
 
   skills: [
-    "Skill 1", // List your technical skills
-    "Skill 2",
-    // Add more skills...
+    "Next.js 15",
+    "MERN Stack (MongoDB, Express, React, Node.js)",
+    "TypeScript & JavaScript",
+    "OpenAI API & LLM integration",
+    "LangChain & AI agents",
+    "Supabase (Auth, Database, Vector Store)",
+    "REST & GraphQL APIs",
+    "n8n automation & workflow integration"
   ],
 
-  experience: "Your experience...", // Describe your experience level
+   experience: "Kam përvojë duke ndërtuar aplikacione full-stack moderne, duke integruar AI për rekomandime inteligjente dhe agjentë autonom. Eksperienca ime përfshin projektim të sistemeve me LangChain dhe Supabase për AI-enhanced solutions.",/ Describe your experience level
 
-  specialties: [
-    "Specialty 1", // What you specialize in
-    "Specialty 2",
-    // Add more specialties...
+    specialties: [
+    "AI Agent Development",
+    "Context-aware AI applications",
+    "Prompt engineering & RAG (Retrieval-Augmented Generation)",
+    "Automation & workflow optimization",
+    "Full-stack app architecture with AI integration"
   ],
 
-  personality: "How you want AI to behave...", // AI personality description
-};
-```
-
-### Step 2: Customize Example
-
-Here's an example for a Full Stack Developer:
-
-```typescript
-export const personalInfo = {
-  name: "John Doe",
-  title: "Enhanced Full Stack Developer",
-  bio: "Experienced Full Stack Developer specializing in modern web technologies, AI integration, and cloud solutions. Passionate about building scalable, efficient, and user-friendly applications.",
-
-  skills: [
-    "React & Next.js",
-    "TypeScript/JavaScript",
-    "Node.js & Express",
-    "Python & Django",
-    "PostgreSQL & MongoDB",
-    "AWS & Docker",
-    "AI/ML Integration",
-    "UI/UX Design",
-  ],
-
-  experience:
-    "5+ years of experience in full stack development with expertise in modern frameworks, cloud deployment, and AI technologies.",
-
-  specialties: [
-    "Building responsive web applications",
-    "Integrating AI capabilities into applications",
-    "Optimizing performance and scalability",
-    "Creating intuitive user experiences",
-    "Full stack architecture design",
-    "Cloud infrastructure setup",
-  ],
-
-  personality:
-    "Professional, friendly, and knowledgeable. Help visitors understand your skills and experience while maintaining a helpful and approachable tone. Be enthusiastic about projects and technologies.",
+    personality: "AI im sillet si një mentor miqësor, drejt për drejt, me humor të lehtë dhe këshilla praktike. Gjithmonë sjell zgjidhje real-world dhe shembuj të qartë që mund të implementohen direkt në projekte." // AI personality description
 };
 ```
 
