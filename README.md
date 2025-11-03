@@ -1,6 +1,6 @@
 # Adrian Assistant AI
 
-A futuristic Matrix-style AI assistant built with Next.js, React, and OpenAI.
+A futuristic Matrix-style AI assistant built with Next.js, React, and Groq.
 
 ## Features
 
@@ -14,16 +14,52 @@ A futuristic Matrix-style AI assistant built with Next.js, React, and OpenAI.
 
 ### Prerequisites
 
-1. **OpenAI API Key**: Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys)
-2. **Vercel Account**: Sign up at [vercel.com](https://vercel.com)
+1. **Groq API Key**: Get your API key from [Groq Cloud Console](https://console.groq.com/keys)
+2. **Supabase Account**: Sign up at [supabase.com](https://supabase.com) and create a new project
+3. **Vercel Account**: Sign up at [vercel.com](https://vercel.com)
 
 ### Environment Variables
 
 Set these environment variables in your Vercel project:
 
 ```bash
-OPENAI_API_KEY=your_openai_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
+
+### Supabase Setup
+
+1. **Create a Supabase Project**:
+   - Go to [supabase.com](https://supabase.com)
+   - Create a new project
+   - Wait for the database to be ready
+
+2. **Create the Messages Table**:
+   - Go to the SQL Editor in your Supabase dashboard
+   - Run the SQL script from `supabase/schema.sql`:
+   ```sql
+   CREATE TABLE IF NOT EXISTS messages (
+     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+     content TEXT NOT NULL,
+     role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+   );
+
+   CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
+
+   ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+
+   CREATE POLICY "Allow all operations on messages" ON messages
+     FOR ALL
+     USING (true)
+     WITH CHECK (true);
+   ```
+
+3. **Get Your Supabase Credentials**:
+   - Go to Project Settings → API
+   - Copy your Project URL → `NEXT_PUBLIC_SUPABASE_URL`
+   - Copy your anon/public key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 ### Deploy Steps
 
@@ -40,7 +76,10 @@ OPENAI_API_KEY=your_openai_api_key_here
    - Go to [vercel.com](https://vercel.com)
    - Click "New Project"
    - Import your GitHub repository
-   - Add environment variable: `OPENAI_API_KEY`
+   - Add environment variables:
+     - `GROQ_API_KEY`
+     - `NEXT_PUBLIC_SUPABASE_URL`
+     - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 3. **Deploy**:
    - Vercel will automatically build and deploy
@@ -57,8 +96,10 @@ OPENAI_API_KEY=your_openai_api_key_here
 2. **Set up environment**:
 
    ```bash
-   cp .env.example .env.local
-   # Edit .env.local with your OpenAI API key
+   # Create .env.local file with:
+   GROQ_API_KEY=your_groq_api_key_here
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
 3. **Run development server**:
@@ -73,7 +114,8 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 - **Frontend**: Next.js 15, React 19, TypeScript
 - **Styling**: Tailwind CSS 4
-- **AI**: OpenAI GPT-4o-mini
+- **AI**: Groq Llama 3.3 70B Versatile
+- **Database**: Supabase (PostgreSQL)
 - **Icons**: Lucide React
 - **Deployment**: Vercel
 
@@ -83,8 +125,8 @@ OPENAI_API_KEY=your_openai_api_key_here
 src/
 ├── app/
 │   ├── api/
-│   │   ├── chat/route.ts      # OpenAI chat API
-│   │   └── message/route.ts    # Message storage API
+│   │   ├── chat/route.ts      # Groq chat API
+│   │   └── message/route.ts    # Supabase message storage API
 │   ├── globals.css            # Global styles
 │   ├── layout.tsx            # App layout
 │   └── page.tsx              # Main component
@@ -115,10 +157,16 @@ src/
 
 ### Common Issues
 
-1. **OpenAI API Key Error**:
+1. **Groq API Key Error**:
 
-   - Ensure `OPENAI_API_KEY` is set in Vercel environment variables
+   - Ensure `GROQ_API_KEY` is set in Vercel environment variables
    - Check API key is valid and has credits
+
+2. **Supabase Connection Error**:
+
+   - Ensure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set
+   - Verify the messages table exists in your Supabase project
+   - Check that Row Level Security policies are configured correctly
 
 2. **Build Errors**:
 
@@ -135,7 +183,7 @@ For issues or questions:
 
 - Check the [Next.js documentation](https://nextjs.org/docs)
 - Review [Vercel deployment guide](https://vercel.com/docs)
-- OpenAI API documentation: [platform.openai.com](https://platform.openai.com/docs)
+- Groq API documentation: [console.groq.com/docs](https://console.groq.com/docs)
 
 ## License
 

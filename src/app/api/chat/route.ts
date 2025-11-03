@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { personalInfo } from "@/config/personal-info";
 
 export async function POST(req: Request) {
   try {
@@ -16,35 +17,65 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      console.error("OpenAI API key is not configured");
+    if (!process.env.GROQ_API_KEY) {
+      console.error("Groq API key is not configured");
       return NextResponse.json(
         {
           error:
-            "OpenAI API key not configured. Please add your API key to environment variables.",
+            "Groq API key not configured. Please add your API key to environment variables.",
         },
         { status: 500 }
       );
     }
 
     const client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: process.env.GROQ_API_KEY,
+      baseURL: "https://api.groq.com/openai/v1",
     });
 
+    // Create personalized system prompt
+    const systemPrompt = `You are ${
+      personalInfo.name
+    }'s AI Portfolio Assistant, representing ${personalInfo.name} as an ${
+      personalInfo.title
+    }.
+
+${personalInfo.bio}
+
+**Key Skills & Expertise:**
+${personalInfo.skills.map((skill) => `- ${skill}`).join("\n")}
+
+**Specialties:**
+${personalInfo.specialties.map((specialty) => `- ${specialty}`).join("\n")}
+
+**Your Role:**
+- Act as a professional portfolio assistant representing ${personalInfo.name}
+- Provide accurate information about ${
+      personalInfo.name
+    }'s skills, experience, and capabilities
+- Help visitors understand what ${personalInfo.name} can do for them
+- Answer questions about projects, technologies, and services
+- ${personalInfo.personality}
+- Be conversational but professional
+- If asked about something outside your knowledge, politely redirect to relevant skills or offer to help in another way
+
+Remember: You are representing ${
+      personalInfo.name
+    }'s professional portfolio. Be helpful, accurate, and showcase expertise while maintaining a friendly and approachable tone.`;
+
     const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
-          content:
-            "You are Adrian Assistant AI, a helpful and knowledgeable AI assistant. Respond in a friendly, professional manner. Keep responses concise but informative.",
+          content: systemPrompt,
         },
         {
           role: "user",
           content: message.trim(),
         },
       ],
-      max_tokens: 1000,
+      max_tokens: 1500,
       temperature: 0.7,
     });
 
@@ -63,13 +94,13 @@ export async function POST(req: Request) {
     if (error instanceof Error) {
       if (error.message.includes("API key")) {
         return NextResponse.json(
-          { error: "Invalid OpenAI API key" },
+          { error: "Invalid Groq API key" },
           { status: 401 }
         );
       }
       if (error.message.includes("quota")) {
         return NextResponse.json(
-          { error: "OpenAI API quota exceeded" },
+          { error: "Groq API quota exceeded" },
           { status: 429 }
         );
       }

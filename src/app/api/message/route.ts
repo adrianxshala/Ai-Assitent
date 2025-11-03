@@ -1,37 +1,50 @@
 // src/app/api/message/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { Message } from "@/types/message";
-
-// Simple in-memory storage for demo purposes
-// In production, you'd want to use a proper database
-let messages: Message[] = [];
+import { supabase } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
   try {
-    const { message } = await request.json();
+    const { message, role = "user" } = await request.json();
 
-    if (!message) {
+    if (!message || typeof message !== "string") {
       return NextResponse.json(
-        { error: "Message is required" },
+        { error: "Message is required and must be a string" },
         { status: 400 }
       );
     }
 
-    // Create a simple message object
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      content: message,
-      created_at: new Date().toISOString(),
-      role: "user",
-    };
-
-    // Add to in-memory storage
-    messages.unshift(newMessage);
-
-    // Keep only last 50 messages to prevent memory issues
-    if (messages.length > 50) {
-      messages = messages.slice(0, 50);
+    if (!["user", "assistant"].includes(role)) {
+      return NextResponse.json(
+        { error: "Role must be either 'user' or 'assistant'" },
+        { status: 400 }
+      );
     }
+
+    // Insert message into Supabase
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        content: message.trim(),
+        role: role,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Supabase insert error:", error);
+      return NextResponse.json(
+        { error: "Failed to save message to database" },
+        { status: 500 }
+      );
+    }
+
+    const newMessage: Message = {
+      id: data.id,
+      content: data.content,
+      created_at: data.created_at,
+      role: data.role as "user" | "assistant",
+    };
 
     return NextResponse.json({
       success: true,
@@ -48,8 +61,29 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    // Return messages from in-memory storage
-    return NextResponse.json({ messages: messages });
+    // Fetch messages from Supabase, ordered by created_at descending
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error("Supabase select error:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch messages from database" },
+        { status: 500 }
+      );
+    }
+
+    const messages: Message[] = (data || []).map((msg) => ({
+      id: msg.id,
+      content: msg.content,
+      created_at: msg.created_at,
+      role: msg.role as "user" | "assistant",
+    }));
+
+    return NextResponse.json({ messages });
   } catch (error) {
     console.error("Messages GET error:", error);
     return NextResponse.json(

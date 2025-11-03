@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Send, Bot } from "lucide-react";
 import { Message } from "@/types/message";
+import { personalInfo } from "@/config/personal-info";
 
 export default function Home() {
   const [input, setInput] = useState("");
@@ -85,33 +86,19 @@ export default function Home() {
     };
   }, []);
 
-  // Load previous messages on component mount
+  // Initialize loading state - no longer loading messages from database
   useEffect(() => {
-    const loadMessages = async () => {
-      try {
-        const res = await fetch("/api/message", {
-          method: "GET",
-          credentials: "include",
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setMessages(data.messages || []);
-        } else {
-          console.warn("Failed to load messages:", res.status);
-        }
-      } catch (error) {
-        console.error("Error loading messages:", error);
-      } finally {
-        setIsLoadingMessages(false);
-      }
-    };
-
-    loadMessages();
+    setIsLoadingMessages(false);
   }, []);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
+
+    // Store the message content before clearing input
+    const messageContent = input.trim();
+    
+    // Clear input field immediately for better UX
+    setInput("");
 
     setIsTyping(true);
     try {
@@ -122,7 +109,7 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message: input,
+          message: messageContent,
         }),
         credentials: "include",
       });
@@ -139,7 +126,7 @@ export default function Home() {
       const chatRes = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ message: messageContent }),
       });
 
       if (!chatRes.ok) {
@@ -148,9 +135,41 @@ export default function Home() {
 
       const chatData = await chatRes.json();
       if (chatData.error) {
-        setResponse(`Error: ${chatData.error}`);
+        // Handle error - could show error message in UI
+        console.error("Chat error:", chatData.error);
       } else {
-        setResponse(chatData.reply);
+        // Save assistant response to database
+        const assistantRes = await fetch("/api/message", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: chatData.reply,
+            role: "assistant",
+          }),
+          credentials: "include",
+        });
+
+        if (assistantRes.ok) {
+          const assistantData = await assistantRes.json();
+          // Add assistant message right after the user message (not at the beginning)
+          setMessages((prev) => {
+            // Find the index of the most recent user message
+            const userMessageIndex = prev.findIndex(
+              (msg) => msg.role === "user"
+            );
+            if (userMessageIndex !== -1) {
+              // Insert assistant message after the user message
+              const newMessages = [...prev];
+              newMessages.splice(userMessageIndex + 1, 0, assistantData.message);
+              return newMessages;
+            } else {
+              // If no user message found, just add at the beginning
+              return [assistantData.message, ...prev];
+            }
+          });
+        }
       }
     } catch (error) {
       console.error("Error:", error);
@@ -276,7 +295,7 @@ export default function Home() {
                   transform: "translateZ(0px)",
                 }}
               >
-                ADRIAN ASSISTANT AI
+                {personalInfo.name.toUpperCase()} PORTFOLIO
               </h1>
               <p
                 className="text-sm sm:text-base md:text-lg lg:text-xl text-cyan-400 font-mono"
@@ -285,7 +304,7 @@ export default function Home() {
                   transform: "translateZ(10px)",
                 }}
               >
-                [SYSTEM_ONLINE] • [NEURAL_NET_ACTIVE]
+                [{personalInfo.title.toUpperCase()}] • [AI ASSISTANT ACTIVE]
               </p>
             </div>
           </div>
@@ -311,59 +330,45 @@ export default function Home() {
 
             {/* Messages Area */}
             <div className="h-48 sm:h-64 md:h-80 lg:h-96 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 relative z-10">
-              {/* Message History */}
+              {/* Messages List */}
               {messages.length > 0 && (
-                <div className="space-y-3 mb-4">
-                  {messages.slice(0, 3).map((msg, index) => (
-                    <div key={msg.id || index} className="flex justify-end">
+                <div className="space-y-3">
+                  {messages.map((msg, index) => (
+                    <div
+                      key={msg.id || index}
+                      className={`flex ${
+                        msg.role === "user" ? "justify-end" : "justify-start"
+                      }`}
+                    >
                       <div
-                        className="bg-green-900/30 text-green-400 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg max-w-[80%] sm:max-w-xs border border-green-400/30 transition-transform duration-300 hover:translateZ(10px)"
+                        className={`${
+                          msg.role === "user"
+                            ? "bg-green-900/30 text-green-400 border-green-400/30"
+                            : "bg-black/50 text-cyan-400 border-cyan-400/30"
+                        } px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg max-w-[80%] sm:max-w-xs border transition-transform duration-300 hover:translateZ(10px)`}
                         style={{
-                          textShadow: "0 0 10px #00FF41",
-                          boxShadow: "0 0 20px rgba(0, 255, 65, 0.3)",
+                          textShadow:
+                            msg.role === "user"
+                              ? "0 0 10px #00FF41"
+                              : "0 0 10px #00FFFF",
+                          boxShadow:
+                            msg.role === "user"
+                              ? "0 0 20px rgba(0, 255, 65, 0.3)"
+                              : "0 0 20px rgba(0, 255, 255, 0.3)",
                         }}
                       >
                         <p className="text-xs sm:text-sm font-mono">
                           {msg.content}
                         </p>
-                        <p className="text-xs text-green-300 mt-1 font-mono">
-                          {new Date(msg.created_at).toLocaleString()}
-                        </p>
+                        {msg.role === "user" && (
+                          <p className="text-xs text-green-300 mt-1 font-mono">
+                            {new Date(msg.created_at).toLocaleString()}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
-              )}
-
-              {/* Current Conversation */}
-              {response && (
-                <>
-                  {/* User Message */}
-                  <div className="flex justify-end mb-2 sm:mb-3">
-                    <div
-                      className="bg-green-900/30 text-green-400 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg max-w-[80%] sm:max-w-xs border border-green-400/30 transition-transform duration-300 hover:translateZ(10px)"
-                      style={{
-                        textShadow: "0 0 10px #00FF41",
-                        boxShadow: "0 0 20px rgba(0, 255, 65, 0.3)",
-                      }}
-                    >
-                      <p className="text-xs sm:text-sm font-mono">{input}</p>
-                    </div>
-                  </div>
-
-                  {/* AI Response */}
-                  <div className="flex justify-start mb-2 sm:mb-3">
-                    <div
-                      className="bg-black/50 text-cyan-400 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg max-w-[80%] sm:max-w-xs border border-cyan-400/30 transition-transform duration-300 hover:translateZ(10px)"
-                      style={{
-                        textShadow: "0 0 10px #00FFFF",
-                        boxShadow: "0 0 20px rgba(0, 255, 255, 0.3)",
-                      }}
-                    >
-                      <p className="text-xs sm:text-sm font-mono">{response}</p>
-                    </div>
-                  </div>
-                </>
               )}
 
               {/* Loading State */}
@@ -379,7 +384,7 @@ export default function Home() {
               )}
 
               {/* Empty State */}
-              {!response && !isLoadingMessages && (
+              {messages.length === 0 && !isLoadingMessages && !isTyping && (
                 <div className="flex items-center justify-center h-24 sm:h-32">
                   <div className="text-center text-green-400 font-mono">
                     <div
@@ -392,7 +397,7 @@ export default function Home() {
                       className="text-sm sm:text-base"
                       style={{ textShadow: "0 0 10px #00FF41" }}
                     >
-                      [AWAITING_INPUT]
+                      Ask me anything about {personalInfo.name}'s work...
                     </p>
                   </div>
                 </div>
@@ -452,7 +457,7 @@ export default function Home() {
                       textShadow: "0 0 5px #00FF41",
                       boxShadow: "0 0 20px rgba(0, 255, 65, 0.2)",
                     }}
-                    placeholder="[ENTER_MATRIX_COMMAND]..."
+                    placeholder="Ask about my skills, experience, or projects..."
                     rows={2}
                   />
                 </div>
@@ -472,8 +477,8 @@ export default function Home() {
                 className="text-xs text-green-400/70 mt-2 font-mono"
                 style={{ textShadow: "0 0 5px #00FF41" }}
               >
-                [ENTER] TO TRANSMIT • [SHIFT+ENTER] FOR MULTILINE •
-                [MATRIX_SYNC_ACTIVE]
+                [ENTER] TO SEND • [SHIFT+ENTER] FOR MULTILINE • 
+                [PORTFOLIO AI ASSISTANT]
               </p>
             </div>
           </div>
@@ -488,12 +493,12 @@ export default function Home() {
               boxShadow: "0 0 20px rgba(0, 255, 65, 0.3)",
             }}
           >
-            <div className="animate-pulse">[SYSTEM_STATUS: ONLINE]</div>
+            <div className="animate-pulse">[PORTFOLIO: ONLINE]</div>
             <div className="animate-pulse" style={{ animationDelay: "0.5s" }}>
-              [NEURAL_NET: ACTIVE]
+              [{personalInfo.title.toUpperCase()}]
             </div>
             <div className="animate-pulse" style={{ animationDelay: "1s" }}>
-              [MATRIX_CONNECTION: STABLE]
+              [AI ASSISTANT: ACTIVE]
             </div>
           </div>
         </div>
@@ -506,12 +511,12 @@ export default function Home() {
               boxShadow: "0 0 20px rgba(0, 255, 255, 0.3)",
             }}
           >
-            <div className="animate-pulse">[AI_CORE: OPERATIONAL]</div>
+            <div className="animate-pulse">[AI ASSISTANT: READY]</div>
             <div className="animate-pulse" style={{ animationDelay: "0.7s" }}>
-              [THREAT_LEVEL: MINIMAL]
+              [STATUS: AVAILABLE]
             </div>
             <div className="animate-pulse" style={{ animationDelay: "1.2s" }}>
-              [MODE: INTERACTIVE]
+              [MODE: PORTFOLIO]
             </div>
           </div>
         </div>

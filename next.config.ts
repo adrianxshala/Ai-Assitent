@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
 
   // Environment variables validation
   env: {
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    GROQ_API_KEY: process.env.GROQ_API_KEY,
   },
 
   // Headers for security
