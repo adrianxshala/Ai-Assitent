@@ -10,6 +10,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Matrix code rain animation
   useEffect(() => {
@@ -90,6 +91,13 @@ export default function Home() {
     setIsLoadingMessages(false);
   }, []);
 
+  // Auto-scroll to bottom when new messages are added
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
   const sendMessage = async () => {
     if (!input.trim()) return;
 
@@ -118,7 +126,8 @@ export default function Home() {
       } else {
         const messageData = await messageRes.json();
         console.log("Message saved successfully:", messageData);
-        setMessages((prev) => [messageData.message, ...prev]);
+        // Add message to the end (newest at bottom)
+        setMessages((prev) => [...prev, messageData.message]);
       }
 
       // Then get AI response
@@ -152,22 +161,8 @@ export default function Home() {
 
         if (assistantRes.ok) {
           const assistantData = await assistantRes.json();
-          // Add assistant message right after the user message (not at the beginning)
-          setMessages((prev) => {
-            // Find the index of the most recent user message
-            const userMessageIndex = prev.findIndex(
-              (msg) => msg.role === "user"
-            );
-            if (userMessageIndex !== -1) {
-              // Insert assistant message after the user message
-              const newMessages = [...prev];
-              newMessages.splice(userMessageIndex + 1, 0, assistantData.message);
-              return newMessages;
-            } else {
-              // If no user message found, just add at the beginning
-              return [assistantData.message, ...prev];
-            }
-          });
+          // Add assistant message to the end (newest at bottom)
+          setMessages((prev) => [...prev, assistantData.message]);
         }
       }
     } catch (error) {
@@ -188,7 +183,7 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen bg-black overflow-hidden">
+    <div className="relative min-h-screen bg-black overflow-hidden" style={{ height: '100dvh' }}>
       {/* Matrix code rain canvas */}
       <canvas
         ref={canvasRef}
@@ -287,7 +282,7 @@ export default function Home() {
 
               {/* 3D Title */}
               <h1
-                className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-green-400 mb-2 sm:mb-3 md:mb-4 transition-transform duration-300 group-hover:translateZ(20px)"
+                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold text-green-400 mb-1 sm:mb-2 md:mb-3 lg:mb-4 transition-transform duration-300 group-hover:translateZ(20px) px-2"
                 style={{
                   textShadow: "0 0 20px #00FF41, 0 0 40px #00FF41",
                   fontFamily: "monospace",
@@ -297,7 +292,7 @@ export default function Home() {
                 {personalInfo.name.toUpperCase()} PORTFOLIO
               </h1>
               <p
-                className="text-sm sm:text-base md:text-lg lg:text-xl text-cyan-400 font-mono"
+                className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl text-cyan-400 font-mono px-2"
                 style={{
                   textShadow: "0 0 10px #00FFFF",
                   transform: "translateZ(10px)",
@@ -328,10 +323,13 @@ export default function Home() {
             ></div>
 
             {/* Messages Area */}
-            <div className="h-48 sm:h-64 md:h-80 lg:h-96 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 relative z-10">
-              {/* Messages List */}
+            <div className="h-48 sm:h-64 md:h-80 lg:h-96 overflow-y-auto p-2 sm:p-3 md:p-4 lg:p-6 space-y-2 sm:space-y-3 md:space-y-4 relative z-10 flex flex-col" style={{ 
+              maxHeight: 'calc(100dvh - 280px)',
+              WebkitOverflowScrolling: 'touch',
+            }}>
+              {/* Messages List - Oldest at top, newest at bottom */}
               {messages.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-3 flex-grow">
                   {messages.map((msg, index) => (
                     <div
                       key={msg.id || index}
@@ -369,22 +367,10 @@ export default function Home() {
                   ))}
                 </div>
               )}
-
-              {/* Loading State */}
-              {isLoadingMessages && (
-                <div className="flex items-center justify-center h-24 sm:h-32">
-                  <div
-                    className="text-green-400 font-mono text-sm sm:text-base"
-                    style={{ textShadow: "0 0 10px #00FF41" }}
-                  >
-                    [LOADING_MATRIX_DATA]...
-                  </div>
-                </div>
-              )}
-
+              
               {/* Empty State */}
               {messages.length === 0 && !isLoadingMessages && !isTyping && (
-                <div className="flex items-center justify-center h-24 sm:h-32">
+                <div className="flex items-center justify-center h-full flex-grow">
                   <div className="text-center text-green-400 font-mono">
                     <div
                       className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 mx-auto mb-2 text-green-400"
@@ -401,6 +387,21 @@ export default function Home() {
                   </div>
                 </div>
               )}
+
+              {/* Loading State */}
+              {isLoadingMessages && (
+                <div className="flex items-center justify-center h-full flex-grow">
+                  <div
+                    className="text-green-400 font-mono text-sm sm:text-base"
+                    style={{ textShadow: "0 0 10px #00FF41" }}
+                  >
+                    [LOADING_MATRIX_DATA]...
+                  </div>
+                </div>
+              )}
+
+              {/* Scroll anchor - always at the bottom */}
+              <div ref={messagesEndRef} />
 
               {/* Typing Indicator */}
               {isTyping && (
@@ -439,10 +440,11 @@ export default function Home() {
 
             {/* 3D Input Area */}
             <div
-              className="p-3 sm:p-4 md:p-6 border-t border-green-400/30 relative z-10"
+              className="p-2 sm:p-3 md:p-4 lg:p-6 border-t border-green-400/30 relative z-10"
               style={{
                 background:
                   "linear-gradient(180deg, transparent, rgba(0, 255, 65, 0.05))",
+                paddingBottom: 'env(safe-area-inset-bottom, 0.5rem)',
               }}
             >
               <div className="flex gap-2 sm:gap-3">
@@ -451,10 +453,19 @@ export default function Home() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={handleKeyPress}
+                    onFocus={() => {
+                      // Scroll to bottom when input is focused on mobile
+                      setTimeout(() => {
+                        if (messagesEndRef.current) {
+                          messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+                        }
+                      }, 300);
+                    }}
                     className="w-full bg-black/50 text-green-400 placeholder-green-400/50 border border-green-400/50 rounded-lg px-2 sm:px-3 md:px-4 py-2 sm:py-3 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent resize-none font-mono transition-all duration-300 text-sm sm:text-base"
                     style={{
                       textShadow: "0 0 5px #00FF41",
                       boxShadow: "0 0 20px rgba(0, 255, 65, 0.2)",
+                      fontSize: '16px', // Prevents zoom on iOS
                     }}
                     placeholder="Ask about my skills, experience, or projects..."
                     rows={2}
@@ -473,7 +484,7 @@ export default function Home() {
                 </button>
               </div>
               <p
-                className="text-xs text-green-400/70 mt-2 font-mono"
+                className="text-xs text-green-400/70 mt-1 sm:mt-2 font-mono hidden sm:block"
                 style={{ textShadow: "0 0 5px #00FF41" }}
               >
                 [ENTER] TO SEND • [SHIFT+ENTER] FOR MULTILINE • 
@@ -483,8 +494,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Layer 3: Floating UI panels */}
-        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20">
+        {/* Layer 3: Floating UI panels - Hidden on mobile */}
+        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20 hidden sm:block">
           <div
             className="bg-black/50 border border-green-400/30 rounded-lg p-2 sm:p-3 font-mono text-green-400 text-xs transition-transform duration-300 hover:translateZ(10px)"
             style={{
@@ -502,7 +513,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-20">
+        <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-20 hidden sm:block">
           <div
             className="bg-black/50 border border-cyan-400/30 rounded-lg p-2 sm:p-3 font-mono text-cyan-400 text-xs transition-transform duration-300 hover:translateZ(10px)"
             style={{
