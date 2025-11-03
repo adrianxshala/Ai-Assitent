@@ -1,7 +1,7 @@
 // src/app/api/message/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { Message } from "@/types/message";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +19,21 @@ export async function POST(request: NextRequest) {
         { error: "Role must be either 'user' or 'assistant'" },
         { status: 400 }
       );
+    }
+
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured() || !supabase) {
+      // Fallback: Return message without saving to database
+      const newMessage: Message = {
+        id: Date.now().toString(),
+        content: message.trim(),
+        created_at: new Date().toISOString(),
+        role: role as "user" | "assistant",
+      };
+      return NextResponse.json({
+        success: true,
+        message: newMessage,
+      });
     }
 
     // Insert message into Supabase
@@ -61,6 +76,12 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured() || !supabase) {
+      // Return empty array if Supabase is not configured
+      return NextResponse.json({ messages: [] });
+    }
+
     // Fetch messages from Supabase, ordered by created_at descending
     const { data, error } = await supabase
       .from("messages")
