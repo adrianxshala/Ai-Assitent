@@ -6,7 +6,6 @@ import { personalInfo } from "@/config/personal-info";
 
 export default function Home() {
   const [input, setInput] = useState("");
-  const [response, setResponse] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
@@ -173,9 +172,9 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Error:", error);
-      setResponse(
-        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
+      // Error handling - could show error message in UI if needed
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error("Chat error:", errorMessage);
     } finally {
       setIsTyping(false);
     }
@@ -397,7 +396,7 @@ export default function Home() {
                       className="text-sm sm:text-base"
                       style={{ textShadow: "0 0 10px #00FF41" }}
                     >
-                      Ask me anything about {personalInfo.name}'s work...
+                      Ask me anything about {personalInfo.name}&apos;s work...
                     </p>
                   </div>
                 </div>
