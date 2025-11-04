@@ -282,7 +282,7 @@ export default function Home() {
 
               {/* 3D Title */}
               <h1
-                className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold text-green-400 mb-1 sm:mb-2 md:mb-3 lg:mb-4 transition-transform duration-300 group-hover:translateZ(20px) px-2"
+                className="text-base sm:text-lg md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-bold text-green-400 mb-0.5 sm:mb-1 md:mb-2 lg:mb-3 transition-transform duration-300 group-hover:translateZ(20px) px-2"
                 style={{
                   textShadow: "0 0 20px #00FF41, 0 0 40px #00FF41",
                   fontFamily: "monospace",
@@ -292,7 +292,7 @@ export default function Home() {
                 {personalInfo.name.toUpperCase()} PORTFOLIO
               </h1>
               <p
-                className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl text-cyan-400 font-mono px-2"
+                className="text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg text-cyan-400 font-mono px-2"
                 style={{
                   textShadow: "0 0 10px #00FFFF",
                   transform: "translateZ(10px)",
@@ -323,13 +323,14 @@ export default function Home() {
             ></div>
 
             {/* Messages Area */}
-            <div className="h-48 sm:h-64 md:h-80 lg:h-96 overflow-y-auto p-2 sm:p-3 md:p-4 lg:p-6 space-y-2 sm:space-y-3 md:space-y-4 relative z-10 flex flex-col" style={{ 
-              maxHeight: 'calc(100dvh - 280px)',
+            <div className="h-64 sm:h-64 md:h-80 lg:h-96 overflow-y-auto p-2 sm:p-3 md:p-4 lg:p-6 space-y-1.5 sm:space-y-2 md:space-y-3 lg:space-y-4 relative z-10 flex flex-col" style={{ 
+              maxHeight: 'calc(100dvh - 220px)',
+              minHeight: 'calc(100dvh - 220px)',
               WebkitOverflowScrolling: 'touch',
             }}>
               {/* Messages List - Oldest at top, newest at bottom */}
               {messages.length > 0 && (
-                <div className="space-y-3 flex-grow">
+                <div className="space-y-1 sm:space-y-2 md:space-y-3 flex-grow">
                   {messages.map((msg, index) => (
                     <div
                       key={msg.id || index}
@@ -342,7 +343,7 @@ export default function Home() {
                           msg.role === "user"
                             ? "bg-green-900/30 text-green-400 border-green-400/30"
                             : "bg-black/50 text-cyan-400 border-cyan-400/30"
-                        } px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg max-w-[80%] sm:max-w-xs border transition-transform duration-300 hover:translateZ(10px)`}
+                        } px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-lg max-w-[85%] sm:max-w-xs border transition-transform duration-300 hover:translateZ(10px)`}
                         style={{
                           textShadow:
                             msg.role === "user"
@@ -354,11 +355,11 @@ export default function Home() {
                               : "0 0 20px rgba(0, 255, 255, 0.3)",
                         }}
                       >
-                        <p className="text-xs sm:text-sm font-mono">
+                        <p className="text-[10px] sm:text-xs md:text-sm font-mono leading-tight">
                           {msg.content}
                         </p>
                         {msg.role === "user" && (
-                          <p className="text-xs text-green-300 mt-1 font-mono">
+                          <p className="text-[9px] sm:text-[10px] md:text-xs text-green-300 mt-0.5 sm:mt-1 font-mono">
                             {new Date(msg.created_at).toLocaleString()}
                           </p>
                         )}
@@ -461,7 +462,7 @@ export default function Home() {
                         }
                       }, 300);
                     }}
-                    className="w-full bg-black/50 text-green-400 placeholder-green-400/50 border border-green-400/50 rounded-lg px-2 sm:px-3 md:px-4 py-2 sm:py-3 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent resize-none font-mono transition-all duration-300 text-sm sm:text-base"
+                    className="w-full bg-black/50 text-green-400 placeholder-green-400/50 border border-green-400/50 rounded-lg px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent resize-none font-mono transition-all duration-300 text-xs sm:text-sm md:text-base"
                     style={{
                       textShadow: "0 0 5px #00FF41",
                       boxShadow: "0 0 20px rgba(0, 255, 65, 0.2)",
@@ -474,7 +475,7 @@ export default function Home() {
                 <button
                   onClick={sendMessage}
                   disabled={!input.trim() || isTyping}
-                  className="bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-black px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg transition-all duration-300 flex items-center justify-center font-bold hover:scale-105"
+                  className="bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-black px-2.5 sm:px-3 md:px-4 lg:px-6 py-1.5 sm:py-2 md:py-3 rounded-lg transition-all duration-300 flex items-center justify-center font-bold hover:scale-105"
                   style={{
                     boxShadow: "0 0 20px rgba(0, 255, 65, 0.5)",
                     textShadow: "0 0 5px #000000",
